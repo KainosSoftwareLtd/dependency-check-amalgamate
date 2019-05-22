@@ -1,4 +1,5 @@
 import argparse
+import os
 import json
 
 
@@ -22,8 +23,8 @@ def write_line(f, length, type):
         f.write(f'{edge}{line}{edge}\n')
 
 
-def write_name_value(f, length, name, value):
-    column_one_width = 20
+def write_name_value(f, length, name, value, width=20):
+    column_one_width = width
     padding = 2
     edge = '│'
 
@@ -36,27 +37,6 @@ def write_name_value(f, length, name, value):
         column_two += ' '
 
     f.write(f'{edge}{column_one}{edge}{column_two}{edge}\n')
-
-
-def write_vulnerability(f, vulnerability):
-    name = vulnerability['name']
-    evidence_count = vulnerability['evidence_count']
-    project = vulnerability['project']
-    highest_severity = vulnerability['highest_severity']
-    vulnerability_count = vulnerability['vulnerability_count']
-    line_length = 100
-
-    write_line(f, line_length, 'top')
-    write_name_value(f, line_length, 'Dependency', name)
-    write_line(f, line_length, None)
-    write_name_value(f, line_length, 'Evidence Count', str(evidence_count))
-    write_line(f, line_length, None)
-    write_name_value(f, line_length, 'Highest Severity', highest_severity)
-    write_line(f, line_length, None)
-    write_name_value(f, line_length, 'CVE Count', str(vulnerability_count))
-    write_line(f, line_length, None)
-    write_name_value(f, line_length, 'Project', project)
-    write_line(f, line_length, 'bottom')
 
 
 def severity_score(severity):
@@ -100,13 +80,24 @@ def read_dependency(dependency):
             'highest_severity': highest_severity}
 
 
+def summarise_vulnerabilities(vulnerabilities):
+    summaries = {}
+    for vulnerability in vulnerabilities:
+        project = vulnerability['project']
+        highest_severity = vulnerability['highest_severity'].lower()
+        summary = summaries.get(project, {'high': 0, 'medium': 0, 'low': 0})
+        summary[highest_severity] += 1
+        summaries[project] = summary
+    return summaries
+
+
 def filter_vulnerabilities(vulnerabilities):
     if type == 'both':
         return vulnerabilities
 
     filtered = []
     for vulnerability in vulnerabilities:
-        if vulnerability['vulnerability_count'] > 0:
+        if vulnerability['vulnerability_count']:
             filtered.append(vulnerability)
     return filtered
 
@@ -137,6 +128,56 @@ def gather_vulnerabilities(data, project):
     return vulnerability_data
 
 
+def write_summary(f, summary_data):
+
+    def pad(str, size):
+        count = len(str)
+        for x in range(size-count):
+            str += ' '
+        return str
+
+    line_length = 100
+    column_one_width = 30
+    write_line(f, line_length, 'top')
+    write_name_value(f, line_length, 'Project', f'{pad("High", 10)}{pad("Medium", 10)}Low', column_one_width)
+    write_line(f, line_length, None)
+
+    projects = summary_data.keys()
+    for idx, project in enumerate(projects):
+        result = summary_data[project]
+        high = str(result['high'])
+        medium = str(result['medium'])
+        low = str(result['low'])
+        project_name = os.path.split(project)[-1].split('.')[0]
+
+        write_name_value(f, line_length, project_name, f'{pad(high, 10)}{pad(medium, 10)}{low}', column_one_width)
+        if idx + 1 < len(projects):
+            write_line(f, line_length, None)
+
+    write_line(f, line_length, 'bottom')
+
+
+def write_vulnerability(f, vulnerability):
+    name = vulnerability['name']
+    evidence_count = vulnerability['evidence_count']
+    project = vulnerability['project']
+    highest_severity = vulnerability['highest_severity']
+    vulnerability_count = vulnerability['vulnerability_count']
+    line_length = 100
+
+    write_line(f, line_length, 'top')
+    write_name_value(f, line_length, 'Dependency', name)
+    write_line(f, line_length, None)
+    write_name_value(f, line_length, 'Evidence Count', str(evidence_count))
+    write_line(f, line_length, None)
+    write_name_value(f, line_length, 'Highest Severity', highest_severity)
+    write_line(f, line_length, None)
+    write_name_value(f, line_length, 'CVE Count', str(vulnerability_count))
+    write_line(f, line_length, None)
+    write_name_value(f, line_length, 'Project', project)
+    write_line(f, line_length, 'bottom')
+
+
 def write_vulnerabilities(f, vulnerabilities):
     for vulnerability in vulnerabilities:
         write_vulnerability(f, vulnerability)
@@ -152,6 +193,8 @@ def amalgamates(output, inputs):
 
     filtered_vulnerabilities = filter_vulnerabilities(all_vulnerabilities)
     sorted_vulnerabilities = sort_vulnerabilities(filtered_vulnerabilities)
+    summaries = summarise_vulnerabilities(sorted_vulnerabilities)
+    write_summary(f, summaries)
     write_vulnerabilities(f, sorted_vulnerabilities)
     f.close()
 
