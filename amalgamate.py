@@ -137,7 +137,7 @@ def write_summary(f, summary_data):
         return str
 
     line_length = 100
-    column_one_width = 30
+    column_one_width = 45
     write_line(f, line_length, 'top')
     write_name_value(f, line_length, 'Project', '{}{}{}'.format(pad("High", 10), pad("Medium", 10),'Low'), column_one_width)
     write_line(f, line_length, None)
