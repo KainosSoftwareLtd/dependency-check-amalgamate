@@ -150,7 +150,7 @@ def write_summary(f, summary_data):
         low = str(result['low'])
         project_name = os.path.split(project)[-1].split('.')[0]
 
-        write_name_value(f, line_length, project_name, '{}{}{}'.format(pad(high, 10), pad(medium, 10), 'low'), column_one_width)
+        write_name_value(f, line_length, project_name, '{}{}{}'.format(pad(high, 10), pad(medium, 10), low), column_one_width)
         if idx + 1 < len(projects):
             write_line(f, line_length, None)
 
