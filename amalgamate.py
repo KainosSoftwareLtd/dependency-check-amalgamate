@@ -88,6 +88,8 @@ def summarise_vulnerabilities(vulnerabilities):
         summary = summaries.get(project, {'high': 0, 'medium': 0, 'low': 0})
         summary[highest_severity] += 1
         summaries[project] = summary
+
+
     return summaries
 
 
@@ -100,6 +102,20 @@ def filter_vulnerabilities(vulnerabilities):
         if vulnerability['vulnerability_count']:
             filtered.append(vulnerability)
     return filtered
+
+
+def get_summary_keys_by_order(summaries):
+    def severity_conversion(summary):
+        return (summary['high'] * 100) + (summary['medium'] * 10) + summary['low']
+
+    sorted_summaries = {}
+    for key in summaries.keys():
+        value = severity_conversion(summaries[key])
+        sorted_summaries[key] = value
+
+    sorted_summaries = sorted(sorted_summaries.items(), key=lambda x: x[1], reverse=True)
+    sorted_keys = [i[0] for i in sorted_summaries]
+    return sorted_keys
 
 
 def sort_vulnerabilities(vulnerabilities):
@@ -142,7 +158,7 @@ def write_summary(f, summary_data):
     write_name_value(f, line_length, 'Project', '{}{}{}'.format(pad("High", 10), pad("Medium", 10),'Low'), column_one_width)
     write_line(f, line_length, None)
 
-    projects = summary_data.keys()
+    projects = get_summary_keys_by_order(summary_data)
     for idx, project in enumerate(projects):
         result = summary_data[project]
         high = str(result['high'])
