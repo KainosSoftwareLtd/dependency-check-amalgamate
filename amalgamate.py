@@ -108,12 +108,15 @@ def get_summary_keys_by_order(summaries):
     def severity_conversion(summary):
         return (summary['high'] * 100) + (summary['medium'] * 10) + summary['low']
 
+    def key_retrieval(tuple):
+        return tuple[1]
+
     sorted_summaries = {}
     for key in summaries.keys():
         value = severity_conversion(summaries[key])
         sorted_summaries[key] = value
 
-    sorted_summaries = sorted(sorted_summaries.items(), key=lambda x: x[1], reverse=True)
+    sorted_summaries = sorted(sorted_summaries.items(), key=key_retrieval, reverse=True)
     sorted_keys = [i[0] for i in sorted_summaries]
     return sorted_keys
 
